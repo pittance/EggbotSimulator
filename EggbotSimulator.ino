@@ -2,24 +2,34 @@
 #include <AccelStepper.h>
 #include <Servo.h> 
  
-
-AccelStepper motorA(4, 2, 4, 3, 5);
-AccelStepper motorB(4, 8, 10, 9, 11);
+// Define the stepper and the pins it will use
+#define M1_DIR 3
+#define M1_STP 2
+#define M2_DIR 5
+#define M2_STP 4
+#define MS1 11        // PIN 11 = MS1
+#define MS2 12        // PIN 12 = MS2
+#define SERVO 8
+AccelStepper motorA(1, M1_STP, M1_DIR);
+AccelStepper motorB(1, M2_STP, M2_DIR);
 
 Servo myservo;
 
 long interval = 1000;  
 GSerialCommand sCmd;     // The demo SerialCommand object
 boolean turning = false;
-long previousMillis = 0; 
-int stepsPerRevolution = 2048;
-int STEPSPERREVOLUTION = 3200;
+long previousMillis = 0;
+int hardwareStepsPerRev = 200;
+int modeType = 4;
+int STEPSPERREVOLUTION = hardwareStepsPerRev*modeType;
 double MAXSPEED = 400.0;
 double MAXACCELERATION = 400.0;
 float ratio;
+
 void setup() {
   
    Serial.begin(9600);
+   Serial.println("OKinitialised");
    
    sCmd.addCommand("SM",     processCommand);  // Converts two arguments to integers and echos them back 
    sCmd.addCommand("SP", processCommand2);
@@ -27,7 +37,10 @@ void setup() {
    sCmd.addCommand("v", returnversion);
    sCmd.setDefaultHandler(unrecognized);      // Handler for command that isn't matched  (says "What?")
    
-   myservo.attach(12);
+   pinMode(MS1, OUTPUT);   // set pin 11 to output
+   pinMode(MS2, OUTPUT);   // set pin 12 to output
+   
+   myservo.attach(SERVO);
    
     motorA.setMaxSpeed(MAXSPEED);
   motorA.setAcceleration(MAXACCELERATION);
@@ -38,6 +51,10 @@ void setup() {
 }
 
 void loop() {
+  //define the step mode
+  digitalWrite(MS1, MS1_MODE(modeType));  // Set state of MS1 based on the returned value from the MS1_MODE() switch statement.
+  digitalWrite(MS2, MS2_MODE(modeType));  // Set state of MS2 based on the returned value from the MS2_MODE() switch statement.
+  
     if(turning == false)
     {
       unsigned long currentMillis = millis();
@@ -183,5 +200,41 @@ void processCommand() {
    }
    Serial.println("OK\n\r");
 }
- 
+
+int MS1_MODE(int MS1_StepMode){              // A function that returns a High or Low state number for MS1 pin
+  switch(MS1_StepMode){                      // Switch statement for changing the MS1 pin state
+  case 1:
+    MS1_StepMode = 0;
+    break;
+  case 2:
+    MS1_StepMode = 1;
+    break;
+  case 4:
+    MS1_StepMode = 0;
+    break;
+  case 8:
+    MS1_StepMode = 1;
+    break;
+  }
+  return MS1_StepMode;
+}
+
+int MS2_MODE(int MS2_StepMode){              // A function that returns a High or Low state number for MS2 pin
+  switch(MS2_StepMode){                      // Switch statement for changing the MS2 pin state
+                                             // Different input states allowed are 1,2,4 or 8
+  case 1:
+    MS2_StepMode = 0;
+    break;
+  case 2:
+    MS2_StepMode = 0;
+    break;
+  case 4:
+    MS2_StepMode = 1;
+    break;
+  case 8:
+    MS2_StepMode = 1;
+    break;
+  }
+  return MS2_StepMode;
+} 
 
