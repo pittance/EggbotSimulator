@@ -22,8 +22,8 @@ long previousMillis = 0;
 int hardwareStepsPerRev = 200;
 int modeType = 4;
 int STEPSPERREVOLUTION = hardwareStepsPerRev*modeType;
-double MAXSPEED = 400.0;
-double MAXACCELERATION = 400.0;
+double MAXSPEED = 500.0;
+double MAXACCELERATION = 2000.0;
 float ratio;
 
 void setup() {
@@ -42,11 +42,11 @@ void setup() {
    
    myservo.attach(SERVO);
    
-    motorA.setMaxSpeed(MAXSPEED);
-  motorA.setAcceleration(MAXACCELERATION);
-  motorB.setMaxSpeed(MAXSPEED);
-  motorB.setAcceleration(MAXACCELERATION);
-  turning = false; 
+   motorA.setMaxSpeed(MAXSPEED);
+   motorA.setAcceleration(MAXACCELERATION);
+   motorB.setMaxSpeed(MAXSPEED);
+   motorB.setAcceleration(MAXACCELERATION);
+   turning = false; 
   
 }
 
@@ -66,9 +66,9 @@ void loop() {
     }
     while(turning == true)
     {
-      
-      motorA.run();
-      motorB.run();
+      //run at constant speed (as EiBotBoard)
+      motorA.runSpeedToPosition();
+      motorB.runSpeedToPosition();
        if (motorA.distanceToGo() == 0 && motorB.distanceToGo() == 0 && turning == true)
        {
        
@@ -81,87 +81,57 @@ void loop() {
 
 void unrecognized(const char *command) 
 {
-  Serial.println("OK\n\r");
+  Serial.println("Not recognised\n\r");
 }
 
 
+// command to move as EiBotBoard - no acceleration
 void processCommand() {
-  float x;
-  float d; 
+  int d;  //read d in milliseconds
+  float ds; //d converted to seconds
+  int x;
+  int y;
   char *arg;
+  
   arg = sCmd.next();
-  if (arg != NULL) 
-  {
-    d = atof(arg);    
+  if (arg != NULL) {
+    //read duration
+    d = atoi(arg);    //convert string to int
+    ds = d/1000.0;
   }
   
   arg = sCmd.next();
-  if (arg != NULL) 
-  {
-    x = atof(arg);    
+  if (arg != NULL) {
+    //read motorA
+    x = atoi(arg);    //convert string to int    
   }
   
-  float y;
+  
   arg = sCmd.next();
-  if (arg != NULL) 
-  {
-    y = atof(arg);
-    if( x == 0 && y == 0)
-    {
+  if (arg != NULL) {
+    //read motorB
+    y = atoi(arg);    //convert string to int
+    
+    if( x == 0 && y == 0) {
+      //no move, both at zero
       delay(d);
       Serial.println("OK\n\r");
-    }
-    else
-    {
-      ratio = x/y;
-       
-  
-      if (ratio >=1 || y==0 && x>0)
-      {
-        //x>y
-        motorA.setMaxSpeed(MAXSPEED);
-        motorA.setAcceleration(MAXACCELERATION);
-        motorB.setMaxSpeed(MAXSPEED/ratio);
-        motorB.setAcceleration(MAXACCELERATION/ratio);
+    } else {
+      Serial.print("SM,");
+      Serial.print(d);
+      Serial.print(",");
+      Serial.print(x);
+      Serial.print(",");
+      Serial.print(y);
+      Serial.println("\n\r");
+      //move needed
+      if (x!=0) {
+        motorA.move(x);
+        motorA.setSpeed(abs(x/ds));
       }
-      if (ratio <1 && ratio >0)
-      {
-        //y>x
-        motorA.setMaxSpeed(MAXSPEED*ratio);
-        motorA.setAcceleration(MAXACCELERATION*ratio);
-        motorB.setMaxSpeed(MAXSPEED);
-        motorB.setAcceleration(MAXACCELERATION);
-      }
-      if (ratio >=-1 && ratio <0)
-      {
-        //x>y
-        motorA.setMaxSpeed(MAXSPEED*-ratio);
-        motorA.setAcceleration(MAXACCELERATION*-ratio);
-        motorB.setMaxSpeed(MAXSPEED);
-        motorB.setAcceleration(MAXACCELERATION);
-      }
-      if (ratio< -1)
-      {
-        //y>x
-        motorA.setMaxSpeed(MAXSPEED*-ratio);
-        motorA.setAcceleration(MAXACCELERATION*-ratio);
-        motorB.setMaxSpeed(MAXSPEED);
-        motorB.setAcceleration(MAXACCELERATION);
-      }
-      if (y==0 && x<0)
-      {
-        
-        motorA.setMaxSpeed(MAXSPEED);
-        motorA.setAcceleration(MAXACCELERATION);
-      }
-      if(y != 0)
-      {
-        motorB.move(y*5.688*360/STEPSPERREVOLUTION);
-      }
-      if (x!= 0)
-      {
-        motorA.move(x*5.688*360/STEPSPERREVOLUTION);
-  
+      if (y!=0) {
+        motorB.move(y);
+        motorB.setSpeed(abs(y/ds));
       }
       turning = true;
     }
