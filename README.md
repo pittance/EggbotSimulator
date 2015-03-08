@@ -14,3 +14,7 @@ The GSerialCommand can be found on my github.
 Any other command will be processed and will return OK.
 
 Check http://mijnpws.wordpress.com/arduino-simuleert-eibotboard-inkscape-plugin/ for more information.
+
+Modifications to V1 by pittance
+This is intended to run a 2D drawbot based on a delta kinematic, because of the weird geometry I don't know how to use acceleration while still keeping everything in step so the fork is intended to get closer to the quite clunky implementation of EiBotBoard (no acceleration, speed defined by duration on move command)
+I will also add limit switch implementations
